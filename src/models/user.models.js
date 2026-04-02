@@ -3,6 +3,7 @@ import { AvailableUserRoles } from "../constants.js";
 import bcrypt from "bcrypt"
 import fs from "fs"
 import jwt from "jsonwebtoken"
+import crypto from "crypto"
 
 
 
@@ -104,16 +105,23 @@ userSchema.methods.generateRefreshToken= function(){
 }
 
 userSchema.methods.generateEmailVerificationToken= function () {
-   return jwt.sign(
-    {
-      username:this.username,
-      fullname:this.fullname
-    },
-    process.env.EMAIL_VERIFICATION_KEY,
-    {
-      expiresIn:String(this.emailVarificationExpiry)
-    }
-   )
+    const unhashedToken=crypto.randomBytes(20).toString('hex')
+     
+    const hashedToken=crypto
+              .createHash("sha256")
+              .update(unhashedToken)
+              .digest('hex')
+
+    const tokenExpiry=Date.now()+(20*60*1000)
+
+    return {unhashedToken,hashedToken,tokenExpiry}
+
+
+
+   console.log(digest);
+   ;
+
+   
 }
 
 userSchema.methods.generateAccessToken=function(){
@@ -136,4 +144,6 @@ userSchema.methods.isPasswordCorrect=async function(password){
   return bcrypt.compare(this.password,password)
   
 }
+
+
 export const User=mongoose.model("User",userSchema)
