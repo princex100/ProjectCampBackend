@@ -6,6 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { emailVerificationMailgenContent, sendEmail } from "../utils/mail.js";
 import path from "path"
+import { access } from "fs";
 
 const generateAccessandRefreshToken=async(userId)=>{
   try {
@@ -25,7 +26,8 @@ const generateAccessandRefreshToken=async(userId)=>{
      user.accessToken=AccessToken
      
     
-
+  console.log(RefreshToken);
+  
     const isSaved= await user.save();
 
     if(isSaved){
@@ -89,14 +91,16 @@ export const registerUser=asyncHandler(async(req,res,next)=>{
       password,
       avatar:{
         url:avatarUrl.url
-      }
+      },
+      isEmailVarified:true
+
      })
      
 
 // GENERATING TOKENS FOR STORING IN USER OBJECT
    const {unhashedToken,hashedToken,tokenExpiry}= userObj.generateEmailVerificationToken()
 
-   const {accessToken,refreshToken}= await generateAccessandRefreshToken(userObj._id)
+  //  const {accessToken,refreshToken}= await generateAccessandRefreshToken(userObj._id)
 
     userObj.emailVerificationToken=hashedToken;
     userObj.emailVerificationExpiry=tokenExpiry;
@@ -114,14 +118,18 @@ export const registerUser=asyncHandler(async(req,res,next)=>{
 
 
   // SENDING EMAIL
-    await sendEmail({
+   const isEmailVerified= await sendEmail({
       email:userObj?.email,
       name:username,
       subject:"email verification !",
       MailgenContent
     })
 
+    if(isEmailVerified){
+      userObj.isEmailVarified=true;
+    }
 
+    await userObj.save({validateBeforeSave:false})
 
   // EXTRACTING STORED USER OBJECT FROM DB FOR RESPONSE
     const finalUserobj=await User.findById(userObj._id).select("-password -refreshToken -emailVerificationToken -emailVerificationExpiry ")
@@ -133,4 +141,67 @@ export const registerUser=asyncHandler(async(req,res,next)=>{
     res.status(200).json(
           new ApiResponse(200,"successfully registered user",finalUserobj)
         )
+})
+
+
+
+export const loginUser=asyncHandler(async(req,res)=>{
+
+
+// VALIDATING INCOMING DATA AFTER EXPRESS-VALIDATOR
+  if(!req.body){
+    throw new ApiError(400,"all fields are required!")
+  }
+
+  const {email , username,password}=req.body;
+
+
+  if(!email&&!username){
+    throw new ApiError("username or password id required")
+  }
+
+
+// CHECKING IF USER REGISTERED OR NOT
+ const user=await User.findOne({
+  $or:[{email},{username}]
+ })
+
+
+
+ if(!user){
+  throw new ApiError(400,"user doesn't exist. Register first!")
+ }
+
+
+// VERIFYING PASSWORD IS CORRECT OR NOT
+ const IsPasswordCorrect=await user.isPasswordCorrect(password)
+
+ if(!IsPasswordCorrect){
+  throw new ApiError(400,"login failed! incorrect password")
+ }
+
+
+// GENERATING TOKENS TO SEND IN COOKIES
+ const {AccessToken,RefreshToken}=await generateAccessandRefreshToken(user._id)
+
+
+// FETCHING FINAL USER OBJECT FROM DB TO SEND TO CLIENT
+const finalUser=await User.findById(user._id).select("-password -refreshToken -accessToken -emailVerificationToken -emailVerificationExpiry")
+
+
+// SENDING FINAL RESPONSE
+ res
+ .status(200)
+ .cookie("accesstoken",AccessToken)
+ .cookie("refreshtoken",RefreshToken)
+ .json(
+  new ApiResponse("logged in successfully!",200,{
+    userData:finalUser,
+    accessToken:AccessToken,
+    refreshToken:RefreshToken
+  })
+ )
+
+
+
 })

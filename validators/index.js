@@ -5,23 +5,43 @@ export const registerValidator=()=>{
   return [
     body("email")
          .trim()
-         .isEmpty()
-         .withMessage("email is required")
+         .notEmpty()
+         .withMessage("email must not be empty")
          .isEmail()
          .withMessage("incorrect email format")
          ,
     body("password")
          .trim()
-         .isEmpty()
-         .withMessage("password is required")
          .isLength({min:6})
          .withMessage("minimum password length should be six")
          ,
     body("username")
          .trim()
-         .isEmpty()
+         .notEmpty()
          .withMessage("username is required")
 
     
   ]
+}
+
+export const LoginValidator=()=>{
+     return [
+          body("email")
+            .optional()
+            .trim()
+            .isEmpty()
+            .withMessage("email is required!")
+            .isEmail()
+            .withMessage("email format is required!"),
+// body("password")
+//          .trim()
+//          .isLength({min:6})
+//          .withMessage("minimum password length should be six"),
+          body("username")
+            .optional()
+            .trim()
+            .notEmpty()
+            .withMessage("username is required!")
+
+     ]
 }

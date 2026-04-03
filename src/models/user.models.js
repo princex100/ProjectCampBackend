@@ -143,7 +143,7 @@ userSchema.methods.generateAccessToken=function(){
 
     }
     ,
-       process.env.ACCESS_SECRET_KEY,
+      process.env.ACCESS_SECRET_KEY,
     {
       expiresIn:process.env.ACCESS_TOKEN_EXPIRY
     }
@@ -152,7 +152,7 @@ userSchema.methods.generateAccessToken=function(){
 
 
 userSchema.methods.isPasswordCorrect=async function(password){
-  return bcrypt.compare(this.password,password)
+  return  bcrypt.compare(password,this.password)
   
 }
 

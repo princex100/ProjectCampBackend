@@ -31,6 +31,16 @@ import { router as Healthrouter } from "./routes/healthcheck.routes.js";
 
 app.use("/api/v1/",Healthrouter)
 
+app.use((err,req,res,next)=>{
+  res.status(err.statusCode||500)
+  .json({
+    errors:err.errors,
+    message:err.message||"something went wrong!",
+    data:err.data,
+    statusCode:err.statusCode||500
+
+  })
+})
 
 export{app}
 
