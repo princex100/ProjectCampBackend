@@ -2,6 +2,7 @@ import express from "express"
 import { dbConnect } from "./db/db.js"
 import dotenv from "dotenv"
 import { app } from "./app.js";
+import mongoose from "mongoose";
 dotenv.config({path:"./.env"})
 
 
@@ -15,12 +16,13 @@ dbConnect()
     console.log("q")
     process.exit(1);
   }
+  console.log(mongoose.connection.name);
+  
 
 
 })
 .catch(err=>{
-  // const error=new ApiError(500,"couldn't connect to database")
-  // next(error)
+ 
 console.error(err)
 }
 )

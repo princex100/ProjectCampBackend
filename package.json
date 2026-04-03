@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Udemy project camp backend project with hitesh sir",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -22,6 +24,7 @@
     "jsonwebtoken": "^9.0.3",
     "mailgen": "^2.0.32",
     "mongoose": "^9.3.3",
+    "multer": "^2.1.1",
     "node-modules": "^1.0.1",
     "nodemailer": "^8.0.4",
     "nodemon": "^3.1.14",

@@ -21,9 +21,15 @@ app.use(express.static("public"))
 
 console.log(1);
 
-import { router as responserouter, router } from "./routes/healthcheck.routes.js";
-app.use("/api/v1",responserouter)
-// app.use("/api/v1",router)
+import { router as Authrouter} from "./routes/user.routes.js";
+
+app.use("/api/v1/auth",Authrouter)
+
+
+
+import { router as Healthrouter } from "./routes/healthcheck.routes.js";
+
+app.use("/api/v1/",Healthrouter)
 
 
 export{app}

@@ -4,6 +4,9 @@ import bcrypt from "bcrypt"
 import fs from "fs"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import dotenv from "dotenv"
+
+dotenv.config({path:"./.env"})
 
 
 
@@ -57,22 +60,29 @@ const userSchema=new mongoose.Schema({
     type:Date,
     
   },
-  emailVarificationToken:{
+  emailVerificationToken:{
     type:String
   }
   ,
-  emailVarificationExpiry:{
+  emailVerificationExpiry:{
     type:Date
   }
   
 },{timestamps:true})
 
+
+
+
+
 userSchema.pre("save",async function(next){
-  if(!this.isModified("password"))return next()
+  if(!this.isModified("password"))return 
 
   this.password=await bcrypt.hash(this.password,10)
-  next()
 })
+
+
+
+
 
 userSchema.methods.generateForgotPasswordToken=async function(){
      jwt.sign({
@@ -86,6 +96,8 @@ userSchema.methods.generateForgotPasswordToken=async function(){
     )
 }
 
+
+
 userSchema.methods.generateRefreshToken= function(){
   return jwt.sign(
     {
@@ -95,16 +107,18 @@ userSchema.methods.generateRefreshToken= function(){
 
     }
     ,
-    process.env.REFRESH_SECRECT_KEY,
+    process.env.REFRESH_SECRET_KEY,
     
     {
-      expiresIn:REFRESH_TOKEN_EXPIRY
+      expiresIn:process.env.REFRESH_TOKEN_EXPIRY
     }
    
   )
 }
 
-userSchema.methods.generateEmailVerificationToken= function () {
+
+
+userSchema.methods.generateEmailVerificationToken=function(){
     const unhashedToken=crypto.randomBytes(20).toString('hex')
      
     const hashedToken=crypto
@@ -115,14 +129,9 @@ userSchema.methods.generateEmailVerificationToken= function () {
     const tokenExpiry=Date.now()+(20*60*1000)
 
     return {unhashedToken,hashedToken,tokenExpiry}
-
-
-
-   console.log(digest);
-   ;
-
-   
 }
+
+
 
 userSchema.methods.generateAccessToken=function(){
   return jwt.sign(
@@ -140,6 +149,8 @@ userSchema.methods.generateAccessToken=function(){
     }
   )
 }
+
+
 userSchema.methods.isPasswordCorrect=async function(password){
   return bcrypt.compare(this.password,password)
   

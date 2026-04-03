@@ -11,7 +11,7 @@ export const sendEmail=async(options)=>{
      const mailgenerator=new Mailgen({
                theme:"default",
                product:{
-                   name:"mailgen",
+                   name:"PrinceTransports.PVT.LTD",
                    link:"http://testing123.com"
                   }
                })
@@ -35,7 +35,7 @@ export const sendEmail=async(options)=>{
 
      const email={
          from:"PrinceDaddy@gmail.com",
-         to:"princeshrm002@gmail.com",
+         to:options.email,
          subject:options.subject,
          text:emailTextual,
          html:emailHtml
