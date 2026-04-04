@@ -7,6 +7,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { emailVerificationMailgenContent, sendEmail } from "../utils/mail.js";
 import path from "path"
 import { access } from "fs";
+import { response } from "express";
 
 const generateAccessandRefreshToken=async(userId)=>{
   try {
@@ -26,7 +27,6 @@ const generateAccessandRefreshToken=async(userId)=>{
      user.accessToken=AccessToken
      
     
-  console.log(RefreshToken);
   
     const isSaved= await user.save();
 
@@ -92,7 +92,7 @@ export const registerUser=asyncHandler(async(req,res,next)=>{
       avatar:{
         url:avatarUrl.url
       },
-      isEmailVarified:true
+      
 
      })
      
@@ -149,6 +149,10 @@ export const loginUser=asyncHandler(async(req,res)=>{
 
 
 // VALIDATING INCOMING DATA AFTER EXPRESS-VALIDATOR
+console.log(req.cookies
+
+);
+
   if(!req.body){
     throw new ApiError(400,"all fields are required!")
   }
@@ -190,10 +194,15 @@ const finalUser=await User.findById(user._id).select("-password -refreshToken -a
 
 
 // SENDING FINAL RESPONSE
+
+const options={
+  httpOnly:true,
+  secure:true
+}
  res
  .status(200)
- .cookie("accesstoken",AccessToken)
- .cookie("refreshtoken",RefreshToken)
+ .cookie("accesstoken",AccessToken,options)
+ .cookie("refreshtoken",RefreshToken,options)
  .json(
   new ApiResponse("logged in successfully!",200,{
     userData:finalUser,
@@ -204,4 +213,59 @@ const finalUser=await User.findById(user._id).select("-password -refreshToken -a
 
 
 
+})
+
+
+
+export const logoutUser=asyncHandler(async(req,res,next)=>{
+    const user=await User.findByIdAndUpdate(req.user._id,{
+        $set:{
+          refreshToken:""
+        }
+        },
+       
+      )
+
+
+      const options={
+        httpOnly:true,
+        secure:true
+      }
+
+
+      res.status(200)
+      .clearCookie("accesstoken",options)
+      .clearCookie("refreshtoken",options)
+      .json(
+        new ApiResponse(200,"logged out Successfully!")
+      )
+})
+
+
+export const currentUser=asyncHandler(async(req,res,next)=>{
+   const userid=req.user._id
+   const user=await User.findById(userid).select("-password -refreshToken -forgotPasswordToken -forgotPasswordExpiry -emailVerificationToken -emailVerificationExpiry")
+
+   res.status(200)
+   .json(
+    new ApiResponse("userdata fetched",200,user)
+   )
+})
+
+
+export const changePassword=asyncHandler(async(req,res,next)=>{
+  const userid=req.user._id;
+
+  const user=await User.findById(userid)
+   const password=req.body.password;
+
+  user.password=password;
+
+  await user.save()
+
+  
+  res.status(200)
+  .json(
+    new ApiResponse("password updated successfully!",200)
+  )
 })

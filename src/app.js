@@ -21,7 +21,7 @@ app.use(express.static("public"))
 
 console.log(1);
 
-import { router as Authrouter} from "./routes/user.routes.js";
+import { router as Authrouter} from "./routes/auth.routes.js";
 
 app.use("/api/v1/auth",Authrouter)
 

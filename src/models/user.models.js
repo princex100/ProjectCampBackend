@@ -48,10 +48,6 @@ const userSchema=new mongoose.Schema({
     type:String,
 
   },
-   accessToken:{
-    type:String,
-    
-  },
    forgotPasswordToken:{
     type:String,
     

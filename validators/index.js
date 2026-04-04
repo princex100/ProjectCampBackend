@@ -45,3 +45,14 @@ export const LoginValidator=()=>{
 
      ]
 }
+
+export const passwordValidator=()=>{
+     return [
+          body("password")
+          .trim()
+          .notEmpty()
+          .withMessage("password is required!")
+          .isLength({min:5})
+          .withMessage("minimum password length must be 6")
+     ]
+}
