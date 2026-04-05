@@ -11,6 +11,7 @@ import { response } from "express";
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
 
+
 const generateAccessandRefreshToken=async(userId)=>{
   try {
     const user=await User.findById(userId)
@@ -362,4 +363,50 @@ export const resendEmailVerification=asyncHandler(async(req,res,next)=>{
    )
 
 
+})
+
+
+
+export const refreshAccessToken=asyncHandler(async(req,res,next)=>{
+  
+  const incomingToken=req.cookies.refreshtoken || req.body.refreshtoken;
+
+  if(!incomingToken){
+    throw new ApiError(400,"refreshToken not found . login again!")
+  }
+
+  try {
+     const decodedToken=jwt.verify(incomingToken,process.env.REFRESH_SECRET_KEY);
+
+     const user=await User.findById(decodedToken._id);
+
+     if(!user){
+      throw new ApiError(400,"user not found!")
+     }
+
+     if(user.refreshToken!==incomingToken){
+      throw new ApiError(400,"unauthorized access!")
+     }
+
+     const newrefreshToken=await user.generateRefreshToken();
+     const newaccessToken=await user.generateAccessToken();
+
+     user.refreshToken=newrefreshToken;
+     await user.save({validateBeforeSave:false})
+      
+     const options={
+      httpOnly:true,
+      secure:true
+     }
+
+     return res.status(200)
+     .cookie("refreshtoken",newrefreshToken,options)
+     .cookie("accesstoken",newaccessToken,options)
+     .json(
+        new ApiResponse("tokens refreshed successfully!",200)
+     )
+    
+  } catch (error) {
+      throw new ApiError(400,"tokens are tempered or expired or invalid!")
+  } 
 })
