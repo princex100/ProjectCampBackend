@@ -42,7 +42,7 @@ const userSchema=new mongoose.Schema({
   },
   isEmailVarified:{
     type:Boolean,
-    required:true
+    required:false
   },
   refreshToken:{
     type:String,

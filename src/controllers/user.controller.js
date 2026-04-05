@@ -8,6 +8,8 @@ import { emailVerificationMailgenContent, sendEmail } from "../utils/mail.js";
 import path from "path"
 import { access } from "fs";
 import { response } from "express";
+import jwt from "jsonwebtoken"
+import crypto from "crypto"
 
 const generateAccessandRefreshToken=async(userId)=>{
   try {
@@ -19,14 +21,10 @@ const generateAccessandRefreshToken=async(userId)=>{
     
      const RefreshToken=user.generateRefreshToken()
      
-
-     
-     
      
      user.refreshToken=RefreshToken
      user.accessToken=AccessToken
      
-    
   
     const isSaved= await user.save();
 
@@ -41,6 +39,8 @@ const generateAccessandRefreshToken=async(userId)=>{
     return false
   }
 }
+
+
 
 export const registerUser=asyncHandler(async(req,res,next)=>{
   console.log(req?.body);
@@ -112,22 +112,22 @@ export const registerUser=asyncHandler(async(req,res,next)=>{
 
 
 // CREATING EMAIL BODY FOR SENDING MAILS
-    const verificationUrl=`${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unhashedToken}`
+console.log(req.protocol);
+
+    const verificationUrl=`${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unhashedToken}`
     const MailgenContent= emailVerificationMailgenContent(username,verificationUrl);
     
 
 
   // SENDING EMAIL
-   const isEmailVerified= await sendEmail({
+   await sendEmail({
       email:userObj?.email,
       name:username,
       subject:"email verification !",
       MailgenContent
     })
 
-    if(isEmailVerified){
-      userObj.isEmailVarified=true;
-    }
+    
 
     await userObj.save({validateBeforeSave:false})
 
@@ -242,6 +242,7 @@ export const logoutUser=asyncHandler(async(req,res,next)=>{
 })
 
 
+
 export const currentUser=asyncHandler(async(req,res,next)=>{
    const userid=req.user._id
    const user=await User.findById(userid).select("-password -refreshToken -forgotPasswordToken -forgotPasswordExpiry -emailVerificationToken -emailVerificationExpiry")
@@ -251,6 +252,7 @@ export const currentUser=asyncHandler(async(req,res,next)=>{
     new ApiResponse("userdata fetched",200,user)
    )
 })
+
 
 
 export const changePassword=asyncHandler(async(req,res,next)=>{
@@ -268,4 +270,96 @@ export const changePassword=asyncHandler(async(req,res,next)=>{
   .json(
     new ApiResponse("password updated successfully!",200)
   )
+})
+
+
+
+export const verifyEmail=asyncHandler(async(req,res,next)=>{
+  const {emailVerificationToken}=req.params
+  if(!emailVerificationToken){
+    throw new ApiError(400,"email verification token is missing!")
+  }
+
+      const HashedToken=crypto.createHash("sha256")
+      .update(emailVerificationToken)
+      .digest("hex")
+
+      const user= await User.findOne({
+        emailVerificationToken:HashedToken,
+        emailVerificationExpiry:{$gt:Date.now()}
+      })
+
+      if(!user){
+        new ApiError(400,"token is invalid or token has Expired!")
+      }
+
+      user.isEmailVarified=true;
+      user.emailVerificationToken=undefined;
+      user.emailVerificationExpiry=undefined
+      await user.save({validateBeforeSave:false})
+
+      res.status(200)
+      .json(
+        new ApiResponse(200,"email verified successfully!")
+      )
+
+  
+})
+
+
+
+export const resendEmailVerification=asyncHandler(async(req,res,next)=>{
+ 
+   const {email}=req.body
+
+  //  CHECKING EMAIL HAS COME OR NOT
+   if(!email){
+    throw new ApiError(400,"email is required!");
+   }
+
+
+  // FINDING USER BY EMAIL
+   const user=await User.findOne({email})
+
+
+  // EITHER USER DOESNT EXIST OR EMAIL IS WRONG 
+   if(!user){
+      return res.status(200)
+       .json(
+        new ApiResponse("if this email exist , then email verification has been sent succesfully!",200)
+   )
+
+   }
+
+  // GENERATING TOKENS AGAIN CAUSE NEW VERIFICATION LINK IS GOING TO BE SENT
+   const {unhashedToken,hashedToken,tokenExpiry} = user.generateEmailVerificationToken()
+
+
+  // UPDATING TOKENS
+   user.emailVerificationToken=hashedToken;
+   user.emailVerificationExpiry=tokenExpiry;
+
+
+    await user.save()
+
+// SENDING EMAIL AGAIN
+   const validationUrl=`${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unhashedToken}`
+
+    const emailBody=emailVerificationMailgenContent(user.username,validationUrl)
+
+    const options={
+      MailgenContent:emailBody,
+      email,
+      subject:"resend request of email verification"
+    }
+
+    await sendEmail(options)
+
+// SENDING FINAL RESPONSE
+   res.status(200)
+   .json(
+    new ApiResponse("email verification resend succesfully!",200)
+   )
+
+
 })

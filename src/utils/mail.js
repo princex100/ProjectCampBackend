@@ -24,13 +24,18 @@ export const sendEmail=async(options)=>{
 
     // creating connection with the SMTP server who will actually send emails
     const transporter=nodemailer.createTransport({
-      host:process.env.MAILTRAP_SMTP_HOST,
-      port:process.env.MAILTRAP_SMTP_PORT,
-      secure:false,
+      service:"gmail",
       auth:{
-        user:process.env.MAILTRAP_SMTP_USER,
-        pass:process.env.MAILTRAP_SMTP_PASS
+        user:"princeshrm002@gmail.com",
+        pass:"iajq samr setu zmod"
       }
+      // host:process.env.MAILTRAP_SMTP_HOST,
+      // port:process.env.MAILTRAP_SMTP_PORT,
+      // secure:false,
+      // auth:{
+      //   user:process.env.MAILTRAP_SMTP_USER,
+      //   pass:process.env.MAILTRAP_SMTP_PASS
+      // }
     })
 
      const email={
