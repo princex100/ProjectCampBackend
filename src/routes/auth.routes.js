@@ -3,7 +3,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 import { LoginValidator, registerValidator } from "../../validators/index.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import { Router } from "express";
-import {  changePassword, loginUser, logoutUser, refreshAccessToken, registerUser, resendEmailVerification } from "../controllers/user.controller.js";
+import {  changePassword, forgotPassword, loginUser, logoutUser, refreshAccessToken, registerUser, resendEmailVerification, resetPassword } from "../controllers/user.controller.js";
 import { validateJWT } from "../middlewares/auth.middleware.js";
 import { currentUser } from "../controllers/user.controller.js";
 import { passwordValidator } from "../../validators/index.js";
@@ -29,4 +29,10 @@ router.get("/verify-email/:emailVerificationToken",verifyEmail);
 router.get("/resend-email-verification",upload.none(),resendEmailVerification);
 
 router.get("/refresh-token",upload.none(),refreshAccessToken);
+
+router.get("/forgot-password",emailVerification,forgotPassword);
+
+router.get("/reset-password/:incomingToken",upload.none(),passwordValidator(),validate,resetPassword);
+
+
 

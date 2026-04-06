@@ -114,7 +114,7 @@ userSchema.methods.generateRefreshToken= function(){
 
 
 
-userSchema.methods.generateEmailVerificationToken=function(){
+userSchema.methods.generateTemperoryToken=function(){
     const unhashedToken=crypto.randomBytes(20).toString('hex')
      
     const hashedToken=crypto

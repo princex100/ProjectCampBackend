@@ -5,22 +5,23 @@ import jwt from "jsonwebtoken"
 
 export const validateJWT=asyncHandler(async(req,res,next)=>{
 
-console.log(req.cookies.accesstoken);
 
   const accessToken=req.cookies.accesstoken|| req.header("Authorization")?.replace("Bearer ","");
-  if(!accessToken){
-    throw new ApiError(400,"accessToken not found!")
+  const refreshToken=req.cookies.refreshtoken|| req.header("Authorization")?.replace("Bearer ","");
+
+  if(!accessToken&&!refreshToken){
+
+      throw new ApiError(400,"login first!")
   }
   
 
   try {
      const decodedToken=jwt.verify(accessToken,process.env.ACCESS_SECRET_KEY)
-console.log(decodedToken);
 
-  const user=await User.findById(decodedToken._id)
+     const user=await User.findById(decodedToken._id)
 
   if(!user){
-    throw new ApiError(400,"user not found!")
+    throw new ApiError(400,"user not found!.Register again.")
   }
 
   req.user=user

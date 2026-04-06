@@ -10,6 +10,7 @@ import { access } from "fs";
 import { response } from "express";
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import { resetPasswordMailgenContent } from "../utils/mail.js";
 
 
 const generateAccessandRefreshToken=async(userId)=>{
@@ -99,7 +100,7 @@ export const registerUser=asyncHandler(async(req,res,next)=>{
      
 
 // GENERATING TOKENS FOR STORING IN USER OBJECT
-   const {unhashedToken,hashedToken,tokenExpiry}= userObj.generateEmailVerificationToken()
+   const {unhashedToken,hashedToken,tokenExpiry}= userObj.generateTemperoryToken()
 
   //  const {accessToken,refreshToken}= await generateAccessandRefreshToken(userObj._id)
 
@@ -333,7 +334,7 @@ export const resendEmailVerification=asyncHandler(async(req,res,next)=>{
    }
 
   // GENERATING TOKENS AGAIN CAUSE NEW VERIFICATION LINK IS GOING TO BE SENT
-   const {unhashedToken,hashedToken,tokenExpiry} = user.generateEmailVerificationToken()
+   const {unhashedToken,hashedToken,tokenExpiry} = user.generateTemperoryToken()
 
 
   // UPDATING TOKENS
@@ -368,7 +369,7 @@ export const resendEmailVerification=asyncHandler(async(req,res,next)=>{
 
 
 export const refreshAccessToken=asyncHandler(async(req,res,next)=>{
-  
+
   const incomingToken=req.cookies.refreshtoken || req.body.refreshtoken;
 
   if(!incomingToken){
@@ -409,4 +410,122 @@ export const refreshAccessToken=asyncHandler(async(req,res,next)=>{
   } catch (error) {
       throw new ApiError(400,"tokens are tempered or expired or invalid!")
   } 
+})
+
+
+
+export const forgotPassword=asyncHandler(async(req,res,next)=>{
+
+// WHEN USER CLICKS FORGOT PASSWORD EMAIL IS SENT HERE
+  const {email}=req.body;
+  
+// CHECKING INPUT
+  if(!email){
+     throw new ApiError(400,"please enter email.")
+  }
+
+// FETCHING USER
+  const user=await User.findOne({
+    $or:[{email}]
+  })
+
+// SENDING GENEREL RESPONSE IF EMAIL IS INCORRECT OR USER NOT FOUND
+  if(!user){
+     return res.status(200)
+     .json(
+      new ApiResponse("if this email exist, then the email has been sent!")
+     )
+  }
+
+
+  if(user.email!==email){
+     return res.status(200)
+     .json(
+      new ApiResponse("if this email exist, then the email has been sent!")
+     )
+     
+  }
+
+
+// GENERATING TOKENS
+  const {unhashedToken,hashedToken,tokenExpiry}=await user.generateTemperoryToken();
+
+  user.forgotPasswordToken=hashedToken;
+  user.forgotPasswordExpiry=tokenExpiry;
+  
+
+// SAVING NEW USER OBJECT
+  await user.save()
+
+// SENDING EMAIL TO USER
+  const resetUrl=`${req.protocol}://<frontend.com>/reset-password/:${unhashedToken}`
+
+  const emailBody=resetPasswordMailgenContent(user.username,resetUrl);
+
+  const options={
+    subject:"reset password link",
+    email,
+    MailgenContent:emailBody
+  }
+
+  await sendEmail(options)
+
+
+// SENDING FINAL RESPONSE
+  return res.status(200)
+     .json(
+      new ApiResponse("if this email exist, then the email has been sent!")
+     )
+  
+})
+
+
+
+export const resetPassword=asyncHandler(async(req,res,next)=>{
+
+// WHEN USER CLICKS ON EMAIL RESET PASSWORD LINK , IT REDIRECTS TO FRONTEND FORM PAGE FOR RESET PASSWORD , WHERE USER ENTERS HIS NEW PASSWORD AND CLICKS ON RESET PASSWORD , THEN FROM THERE BACKEND RESET PASSWORD URL WITH RESET TOKEN IS SEND TO BACKEND AND HERE WE GET TOKEN AND PASSWORD
+
+  const {password}=req.body;
+
+  const {incomingToken}=req.params;
+
+// VERIFYING INPUTS
+  if(!password){
+    throw new ApiError(400,"please enter Password!")
+  }
+
+  if(!incomingToken){
+    throw new ApiError(400,"missing reset token!")
+  }
+ 
+// GENERATING AND MATCHING TOKEN WITH RESET TOKEN STORED IN DB
+  const newhashedtoken= crypto.createHash("sha256")
+  .update(incomingToken)
+  .digest("hex")
+            
+// FETCHIG USER BASED ON TOKEN
+  const forgotPasswordToken=newhashedtoken
+  const user=await User.findOne({forgotPasswordToken});
+
+
+  if(!user){
+    throw new ApiError(400,"user not found!")
+  }
+
+// IF USER FOUND SET TOKEN AND PASSWORD UNDEFINED 
+// UPDATE PASSWORD
+  user.password=password;
+  user.forgotPasswordToken=undefined;
+  user.forgotPasswordExpiry=undefined;
+
+// SAVING NEW USER OBJECT
+  await user.save();
+
+
+// SENDING FINAL RESPONSE
+  res.status(200)
+  .json(
+    new ApiResponse("password reset successfully!")
+  )
+
 })

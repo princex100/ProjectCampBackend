@@ -84,7 +84,7 @@ return email
 
 
 // html email body for password reset
-const resetPasswordMailgenContent=(username,passwordRestUrl)=>{
+export const resetPasswordMailgenContent=(username,passwordRestUrl)=>{
 
 const email={
   body:{
@@ -107,7 +107,7 @@ return email
 
 
 export  {emailVerificationMailgenContent
-  ,resetPasswordMailgenContent
+  
 }
 
 
