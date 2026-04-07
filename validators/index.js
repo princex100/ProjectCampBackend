@@ -33,10 +33,7 @@ export const LoginValidator=()=>{
             .withMessage("email is required!")
             .isEmail()
             .withMessage("email format is required!"),
-// body("password")
-//          .trim()
-//          .isLength({min:6})
-//          .withMessage("minimum password length should be six"),
+
           body("username")
             .optional()
             .trim()
@@ -46,9 +43,15 @@ export const LoginValidator=()=>{
      ]
 }
 
-export const passwordValidator=()=>{
+export const changepasswordValidator=()=>{
      return [
-          body("password")
+          body("oldPassword")
+          .trim()
+          .notEmpty()
+          .withMessage("password is required!")
+          .isLength({min:5})
+          .withMessage("minimum password length must be 6"),
+           body("newPassword")
           .trim()
           .notEmpty()
           .withMessage("password is required!")
@@ -56,3 +59,28 @@ export const passwordValidator=()=>{
           .withMessage("minimum password length must be 6")
      ]
 }
+
+export const EmailValidator=()=>{
+     return [
+          body("email")
+            .trim()
+            .notEmpty()
+            .withMessage("email is required!")
+            .isEmail()
+            .withMessage("please enter valid email!")
+     ]
+}
+
+export const resetPasswordValidator=()=>{
+     return [
+          body("password")
+            .trim()
+            .notEmpty()
+            .withMessage("email is required!")
+            .isEmail()
+            .withMessage("please enter valid email!")
+     ]
+}
+
+
+

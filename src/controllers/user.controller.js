@@ -10,6 +10,7 @@ import { access } from "fs";
 import { response } from "express";
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import bcrypt from "bcrypt"
 import { resetPasswordMailgenContent } from "../utils/mail.js";
 
 
@@ -258,12 +259,26 @@ export const currentUser=asyncHandler(async(req,res,next)=>{
 
 
 export const changePassword=asyncHandler(async(req,res,next)=>{
+  
   const userid=req.user._id;
 
-  const user=await User.findById(userid)
-   const password=req.body.password;
+  const {oldPassword,newPassword}=req.body;
 
-  user.password=password;
+  const user=await User.findById(userid)
+
+
+  if(!user){
+    throw new ApiError(400,"invalid credentials!")
+  }
+
+  const passwordCorrect=await bcrypt.compare(oldPassword,user.password)
+
+  if(!passwordCorrect){
+    throw new ApiError(400,"invalid credentials!")
+  }
+
+
+  user.password=newPassword;
 
   await user.save()
 
@@ -278,6 +293,7 @@ export const changePassword=asyncHandler(async(req,res,next)=>{
 
 export const verifyEmail=asyncHandler(async(req,res,next)=>{
   const {emailVerificationToken}=req.params
+  
   if(!emailVerificationToken){
     throw new ApiError(400,"email verification token is missing!")
   }
@@ -408,7 +424,7 @@ export const refreshAccessToken=asyncHandler(async(req,res,next)=>{
      )
     
   } catch (error) {
-      throw new ApiError(400,"tokens are tempered or expired or invalid!")
+      throw new ApiError(401,"tokens are tempered or expired or invalid!")
   } 
 })
 
@@ -457,8 +473,8 @@ export const forgotPassword=asyncHandler(async(req,res,next)=>{
 // SAVING NEW USER OBJECT
   await user.save()
 
-// SENDING EMAIL TO USER
-  const resetUrl=`${req.protocol}://<frontend.com>/reset-password/:${unhashedToken}`
+// SENDING EMAIL TO USER --\\-- USER CLICKS AND REDIRECTED TO FRONTEND PAGE FOR RESET PASSWORD
+  const resetUrl=`${process.env.FORGOT_PASSWORD_REDIRECT_URL}/${unhashedToken}`
 
   const emailBody=resetPasswordMailgenContent(user.username,resetUrl);
 
@@ -503,13 +519,19 @@ export const resetPassword=asyncHandler(async(req,res,next)=>{
   .update(incomingToken)
   .digest("hex")
             
+
 // FETCHIG USER BASED ON TOKEN
-  const forgotPasswordToken=newhashedtoken
-  const user=await User.findOne({forgotPasswordToken});
+
+
+  const user=await User.findOne({
+    forgotPasswordToken:newhashedtoken,
+    forgotPasswordExpiry:{$gt:Date.now()}
+
+  });
 
 
   if(!user){
-    throw new ApiError(400,"user not found!")
+    throw new ApiError(404,"token is expired or invalid")
   }
 
 // IF USER FOUND SET TOKEN AND PASSWORD UNDEFINED 
@@ -525,7 +547,7 @@ export const resetPassword=asyncHandler(async(req,res,next)=>{
 // SENDING FINAL RESPONSE
   res.status(200)
   .json(
-    new ApiResponse("password reset successfully!")
+    new ApiResponse("password reset successfully!",200)
   )
 
 })
