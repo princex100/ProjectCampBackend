@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asynchandler.js";
 import { ApiError } from "../utils/ApiErrors.js";
-import { model } from "mongoose";
+import mongoose, { model } from "mongoose";
 import { User } from "../models/user.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
@@ -249,6 +249,10 @@ export const logoutUser=asyncHandler(async(req,res,next)=>{
 export const currentUser=asyncHandler(async(req,res,next)=>{
    const userid=req.user._id
    const user=await User.findById(userid).select("-password -refreshToken -forgotPasswordToken -forgotPasswordExpiry -emailVerificationToken -emailVerificationExpiry")
+   const id=new mongoose.Types.ObjectId(user._id)
+   
+   console.log(user._id,id);
+   
 
    res.status(200)
    .json(

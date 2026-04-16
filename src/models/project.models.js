@@ -20,30 +20,15 @@ const projectSchema=new mongoose.Schema({
   createdBy:{
     type:mongoose.Schema.Types.ObjectId,
     ref:"User"
-  }
-
-
-  // ,
-  // tasks:[
-  //   {
-  //     type:mongoose.Schema.Types.ObjectId,
-  //     ref:"Task"
-  //   }
-  // ],
-  // notes:[
-  //   {
-  //     type:mongoose.Schema.Types.ObjectId,
-  //     ref:"Note"
-  //   }
-  // ],
-  ,
-
-  
-  deadline:{
-    type:Date,
   },
+
+  deadline:{
+    type:String,
+  },
+
   isCompleted:{
     type:Boolean,
+    default:false
     
   }
 

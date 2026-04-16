@@ -28,8 +28,11 @@ app.use("/api/v1/auth",Authrouter)
 
 
 import { router as Healthrouter } from "./routes/healthcheck.routes.js";
+import {router as projectrouter} from "./routes/project.routes.js"
 
 app.use("/api/v1/",Healthrouter)
+app.use("/api/v1/projects/",projectrouter)
+
 
 app.use((err,req,res,next)=>{
   res.status(err.statusCode||500)
