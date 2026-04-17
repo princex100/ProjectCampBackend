@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { AvailableUserRoles,UserRolesEnum } from "../constants.js";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const projectmemberSchema=new mongoose.Schema({
   user:{
@@ -20,4 +21,6 @@ const projectmemberSchema=new mongoose.Schema({
 
 },{timestamps:true})
 
+
+projectmemberSchema.plugin(mongooseAggregatePaginate)
 export const Projectmember=mongoose.model("Projectmember",projectmemberSchema)

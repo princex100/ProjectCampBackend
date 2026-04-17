@@ -296,6 +296,7 @@ export const changePassword=asyncHandler(async(req,res,next)=>{
 
 
 export const verifyEmail=asyncHandler(async(req,res,next)=>{
+
   const {emailVerificationToken}=req.params
   
   if(!emailVerificationToken){

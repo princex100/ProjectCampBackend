@@ -4,52 +4,68 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.models.js";
 import { Project } from "../models/project.models.js";
 import { Projectmember } from "../models/projectMember.models.js";
+import mongoose from "mongoose";
 
 
 export const getProjects=asyncHandler(async(req ,res ,next )=>{
+   
   const userid=req.user._id;
-   console.log(userid);
-
-  const memberIn=await Projectmember.find({user:userid})
-
-  if(!memberIn){
-    return res.status(200).json(
-      new ApiResponse("no projects found",200)
-    )
+  console.log(2);
+  
+  if(!userid){
+    throw new ApiError(400,"userid invalid")
   }
-console.log(memberIn);
 
-const projects=[];
+ const projects=await Projectmember.aggregate([
+    {
+      $match:{
+        user:userid
+      }
+    }
+    ,
+    {
+      $lookup:{
+        from:"projects",
+        let:{projectid:"$project"},
+        pipeline:[
+          {
+             $match:{
+               $expr:{$eq:["$_id","$$projectid"]}
+             }
+          },
+         
+        ],
+        as:"project"
+      }
+    },
+    {
+      $project:{
+        project:{$arrayElemAt:["$project",0]}
+      }
+    }
+    ,
+    {
+      $group:{
+        _id:null,
+        project:{$push:"$project"}
+      }
+    }
+  ])
 
-
-   for (const e of memberIn) {
-     const project=await Project.findById(e.project);
-      console.log("printing one");
-      
-      project.role=e.role;
-      console.log(project);
-
-       projects.push(project);
-   }
-    // memberIn.for(async(e)=>{
-    //   const project=await Project.findById(e.project);
-    //   console.log("printing one");
-      
-    //   project.role=e.role;
-    //   console.log(project);
-
-    //   return projects.push(project);
-    // })
-    
-    console.log(projects);
-    
-
-  res.status(200).json(
-    new ApiResponse("projects fetched!",200,projects)
-  )
+  if(!projects){
+    throw new ApiError(400,"couldn't fetched project")
+  }
+ console.log(projects);
  
 
+  // res.status(200).json("ok")
+  res.status(200)
+  .json(
+    new ApiResponse(200,"projects fetched.",projects[0].project)
+  )
+
 })
+
 
 export const createProject=asyncHandler(async(req,res,next)=>{
    if(!req.body){
@@ -77,7 +93,7 @@ export const createProject=asyncHandler(async(req,res,next)=>{
   }
 
 
-  const project=await Project.create({
+  const project=await new Project({
     name:projectName,
     description,
     deadline,
@@ -85,13 +101,15 @@ export const createProject=asyncHandler(async(req,res,next)=>{
     createdBy:req.user._id,
     
   })
-
-
-  await Projectmember.create({
+   const projMember=await Projectmember.create({
     project:project._id,
     user:req.user._id,
     role:"project_admin"
   })
+ await project.save()
+
+
+ 
   
   
   res.status(200).json(
@@ -125,3 +143,125 @@ export const createProject=asyncHandler(async(req,res,next)=>{
 
 
 // })
+
+export const addMember=asyncHandler(async(req,res)=>{
+
+   const userid=req.user._id
+   const username=req.body.username;
+   const {projectid}=req.params
+   const role=req.body.role;
+
+
+
+
+   if(!username){
+    throw new ApiError(400,"please enter user.")
+   }
+
+   if(!userid||!projectid){
+    throw new ApiError(400,"invalid request.")
+   }
+
+    if(!role){
+    throw new ApiError(400,"enter all the fields.")
+  }
+
+
+
+   const ismemberregistered=await User.findOne({username:username})
+
+   if(!ismemberregistered){
+    throw new ApiError(400,"member is not registered.")
+   }
+
+    
+const ismemberexistinProjectMember=await Projectmember.findById(ismemberregistered._id)
+   
+if(ismemberexistinProjectMember){
+  throw new ApiError(400,"member already exist in project.")
+}
+ const member =await Projectmember.create({
+  user:ismemberregistered._id,
+  project:projectid,
+  role
+ })
+
+
+ res.status(200)
+ .json(
+  new ApiResponse(200,"member added successfully",member,true)
+ )
+
+
+})
+
+
+export const listmembers=asyncHandler(async(req,res)=>{
+    
+  const {projectid}=req.params;
+  
+  if(!projectid){
+    throw new ApiError(400,"couldn't get project id.")
+  }
+console.log(projectid);
+
+  const projmembers= await Projectmember.aggregate([
+    {
+      $match:{
+        project:new mongoose.Types.ObjectId(projectid)
+      }
+    }
+    ,
+    {
+      $lookup:{
+        from:"projects",
+        let:{projectid:"$project"},
+        pipeline:[
+          {
+            $match:{
+              $expr:{$eq:["$_id","$$projectid"]}
+            }
+          },
+          
+        ],
+        as:"project"
+      }
+    },
+    // {
+    //   $project:{
+    //     proj:{$arrayElemAt:["$proj",0]}
+    //   }
+    // }
+    
+    {
+      $lookup:{
+        from:"users",
+        let:{userid:"$user"},
+        pipeline:[
+          {
+            $match:{
+              $expr:{$eq:["$_id","$$userid"]}
+            }
+          },
+        ],
+        as:"user"
+      }
+    }
+    // {
+    //   $project:{
+    //     user:{$arrayElemAt:["$user",0]}
+    //   }
+    // }
+    
+  ])
+console.log(projmembers);
+
+  if(projmembers.length===0){
+    throw new ApiError(400,"no members found.")
+  }
+
+  res.status(200)
+  .json(
+    new ApiResponse(200,"members fetched successfully.",projmembers,true)
+  )
+})

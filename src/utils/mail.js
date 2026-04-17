@@ -1,5 +1,6 @@
 import Mailgen from "mailgen";
  import nodemailer from "nodemailer"
+import { ApiError } from "./ApiErrors.js";
 
 
 // this function initiates the email sending process
@@ -51,8 +52,7 @@ export const sendEmail=async(options)=>{
       try {
          await transporter.sendMail(email)
       } catch (error) {
-    console.error(error)
-        
+        throw new ApiError(400,"email couldn't be sent .Try again.")
       }
 }
 
