@@ -9,23 +9,7 @@ import { refreshAccessToken } from "./user.controller.js";
 import { AvailableUserRoles, UserRolesEnum } from "../constants.js";
 
 
-export const roleBasedPermission=async(userid,projectid)=>{
 
-  const user=await Projectmember.findOne({
-  $and:[{user:new mongoose.Types.ObjectId(userid)},{project:new mongoose.Types.ObjectId(projectid)}]
-}
-)
-if(!user){
-  throw new ApiError(400,"user not found.")
-}
-
-const roles=[UserRolesEnum.ADMIN,UserRolesEnum.PROJECT_ADMIN]
-  if(roles.includes(user?.role)){
-    return true;
-  }
-
-  return false
-}
 
 
 
@@ -196,12 +180,6 @@ export const addMember=asyncHandler(async(req,res)=>{
 
 
 
-const isallowed=await roleBasedPermission(userid,projectid)
-if(!isallowed){
-  throw new ApiError(400,"not authorised for adding a member")
-}
-
-
    const ismemberregistered=await User.findOne({username:username}) 
 
    if(!ismemberregistered){
@@ -337,10 +315,7 @@ if(!userid){
 }
 
 
-const isallowed=await roleBasedPermission(userid,projectid)
-if(!isallowed){
-  throw new ApiError(400,"not authorised for updating the project.")
-}
+
 
   const isupdated=await Project.findByIdAndUpdate(projectid, {
   projectName: projectName,
@@ -440,10 +415,7 @@ if(!user){
 }
 
 
-const isallowed=await roleBasedPermission(userid,projectid)
-if(!isallowed){
-  throw new ApiError(400,"not authorised for deleting the project.")
-}
+
 
 const isdeleted=await Project.findByIdAndDelete(projectid)
 const ismembersdeleted=await Projectmember.deleteMany({project:projectid})
@@ -490,10 +462,7 @@ if(!AvailableUserRoles.includes(newRole)){
 
 
 
-const isallowed=await roleBasedPermission(userid,projectid)
-if(!isallowed){
-  throw new ApiError(400,"not authorised for updating a role.")
-}
+
 
 const member=await Projectmember.findOne({
   $and:[{user:new mongoose.Types.ObjectId(userid)},{project:new mongoose.Types.ObjectId(projectid)}]
@@ -543,10 +512,7 @@ if(!curruserid){
 
 
 
-const isallowed=await roleBasedPermission(userid,projectid)
-if(!isallowed){
-  throw new ApiError(400,"not authorised for removing a member.")
-}
+
 
  
 const member=await Projectmember.findOne({

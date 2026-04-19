@@ -83,4 +83,56 @@ export const resetPasswordValidator=()=>{
 }
 
 
+export const createAndupdateProjectValidators=()=>{
+     return [
+          body("projectName")
+          .trim()
+          .notEmpty()
+          .withMessage("projectname shouldn't be empty.")
+          ,
+          body("description")
+          .optional()
+          .trim()
+          .notEmpty()
+          .withMessage("description shouldn't be empty.")
+          ,
+          body("isCompleted")
+          .notEmpty()
+          .withMessage("project status should not be empty.")
+          .isBoolean()
+          .withMessage("project status should be boolean.")
+          ,
+          body("deadline")
+          .trim()
+          .notEmpty()
+          .withMessage("deadline is required.")
+
+     ]
+}
+
+export const addMembervalidator=()=>{
+     return [
+          body("username")
+          .trim()
+          .notEmpty()
+          .withMessage("username is required.")
+          ,
+          body("role")
+          .trim()
+          .notEmpty()
+          .withMessage("role is required.")
+     ]
+}
+
+export const updateRolevalidator=()=>{
+     return [
+          body("role")
+          .trim()
+          .notEmpty()
+          .withMessage("role is required.")
+          
+     ]
+}
+
+
 
